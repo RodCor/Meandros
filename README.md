@@ -1,6 +1,6 @@
 # Meandros
 
-Requirements
+## Requirements
 
 bezier==2020.5.19
 
@@ -35,4 +35,8 @@ skimage==0.0
 tensorflow==2.4.1
 
 
-Model Weights: 
+## Model Weights
+
+Link: https://drive.google.com/file/d/1MU4vthepYkaKtcQ16TdJiWjsBrGXHnZR/view?usp=sharing
+
+1) Download the weights into Meandro's folder. 
