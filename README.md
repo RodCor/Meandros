@@ -32,7 +32,7 @@ Pillow==8.2.0
 
 skimage==0.0
 
-tensorflow==2.4.1
+tensorflow==1.14.0
 
 
 ## Model Weights
