@@ -124,8 +124,9 @@ class App:
         if len(ctrl) > 1:
             for n in range(len(ctrl) - 1):
                 cv2.line(self.img2, (ctrl[n][0], ctrl[n][1]), (ctrl[n + 1][0], ctrl[n + 1][1]), self.ORANGE, 1)
-        
+    
 
+    
     def return_worker(self):
 
         result = np.asarray(self.finalpoints)
