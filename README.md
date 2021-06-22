@@ -10,7 +10,7 @@ Keras==2.0.8
 
 scipy==1.5.2
 
-tensorflow_gpu==1.15.0
+tensorflow_gpu==2.4.1
 
 h5py==2.10.0
 
@@ -32,7 +32,7 @@ Pillow==8.2.0
 
 skimage==0.0
 
-tensorflow==1.14.0
+tensorflow==2.4.1
 
 
 ## Model Weights
