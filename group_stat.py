@@ -71,7 +71,7 @@ class Statistics:
         elif test_choice == "Student":
             for i in range(0, len(muestras11)):
                 try:
-                    u_statistic, pVal = stats.t(muestras21[i], muestras11[i])
+                    u_statistic, pVal = stats.ttest_ind(muestras21[i], muestras11[i])
                     # ValueError==True
                     p_value1.append(-np.log10(pVal))
                     print(pVal, 'try')
@@ -84,7 +84,7 @@ class Statistics:
         elbow_err = 3.89
         wrist_err = 3.39
 
-        clrs1 = ['red' if (x < 1.35) else 'green' for x in p_value1]  # < o > fijarse
+        clrs1 = ['red' if (x < 1.30) else 'green' for x in p_value1]  # < o > fijarse
 
         plt.style.use('ggplot')
 
@@ -106,10 +106,10 @@ class Statistics:
         axes1.axvline(0, ls='--', color='gray')
         axes1.axvline(0, ls='--', color='gray')
         axes1.axhline(1.3, ls='--', color='gray')
-        axes1.axvline(v_elbow, ls=':', color='gray')
-        axes1.axvline(v_wrist, ls=':', color='gray')
-        axes1.axvspan(v_elbow - elbow_err, v_elbow + elbow_err, alpha=0.5, color='#7B7D7D')
-        axes1.axvspan(v_wrist - wrist_err, v_wrist + wrist_err, alpha=0.5, color='#B3B6B7')
+        # axes1.axvline(v_elbow, ls=':', color='gray')
+        # axes1.axvline(v_wrist, ls=':', color='gray')
+        # axes1.axvspan(v_elbow - elbow_err, v_elbow + elbow_err, alpha=0.5, color='#7B7D7D')
+        # axes1.axvspan(v_wrist - wrist_err, v_wrist + wrist_err, alpha=0.5, color='#B3B6B7')
 
         plt.show()
 

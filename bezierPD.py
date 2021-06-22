@@ -22,14 +22,16 @@ class BezierPD(windows_App.App):
         self.pd = None
         self.SHOW_LINES = False # key: 'r'
         self.roi = roi
-
+        self.intersection = []
+        
 
     def line_control(self, k):
         nodes = np.asarray(self.ctrlPoints).T
         curve = bezier.Curve(nodes, (len(self.ctrlPoints) - 1))
         pd = curve.evaluate_multi(np.linspace(0.0, 1.0, 5000)).T
         pd = np.unique(pd.astype(int), axis=0)
-        if self.ctrlPoints[0][0] < self.img2.shape[0]: #aca falta un /2 sino no tiene sentido
+
+        if self.ctrlPoints[0][0] < self.img2.shape[0]: 
             self.pd = pd
         else:
             self.pd = pd[np.argsort(pd[:, 0])][::-1]
@@ -66,12 +68,16 @@ class BezierPD(windows_App.App):
                 pt_y = b + slope * (pd[k][0])
                 intersection = _utils.f_(pd[k][0], int(pt_y), -(1 / slope)) & self.roi
                 intersection_list = list(intersection)
+                self.intersection.append(intersection_list)
+                
                 try:
                     for i in range(len(intersection_list)):
                         self.img2[intersection_list[i][1], intersection_list[i][0]] = [18, 156, 243]
                 except IndexError:
                     print('Index Error')
+                
+                
 
     def return_worker(self):
-        return self.pd
+        return (self.pd, self.intersection)
 

@@ -3,7 +3,6 @@ from tkinter import *
 from tkinter import filedialog
 from tkinter import ttk
 from PIL import Image as Image_pil
-from PIL import ImageTk, Image
 import bezierPD
 import exclusion
 import zoom
@@ -15,8 +14,10 @@ import roi_detect
 import pandas as pd
 import group_stat
 import tifffile as tif
+import numpy as np
 from skimage import io
 from pathlib import Path
+import frequency_plot as fp
 
 
 class WindowAlert(Tk):
@@ -41,6 +42,8 @@ class File:
         self.amp_plane = None
         self.channel = 0
         self.profile = None
+        self.mask_th = []
+        self.intersect_list = []
 
 
 class Root(Tk):
@@ -58,9 +61,8 @@ class Root(Tk):
         self.title('Meandros')
         self.minsize(400, 300)
 
-
         self.labelFrame0 = ttk.LabelFrame(self, text="Controls")
-        self.labelFrame0.grid(row=1, column=1, padx=10, pady=10)
+        self.labelFrame0.grid(row=1, column=1, padx=15, pady=15)
 
         self.labelFrame01 = ttk.LabelFrame(self.labelFrame0, text="Inputs")
         self.labelFrame01.grid(row=1, column=1, padx=10, pady=20)
@@ -78,10 +80,10 @@ class Root(Tk):
         self.labelFrame02.grid(row=3, column=1, padx=20, pady=40)
 
         self.labelFrame07 = ttk.LabelFrame(self.labelFrame0, text="Analysis")
-        self.labelFrame07.grid(row=3, column=1, padx=5, pady=10)
+        self.labelFrame07.grid(row=3, column=1, padx=15, pady=15)
 
         self.labelFrame08 = ttk.LabelFrame(self.labelFrame0, text="Statistics")
-        self.labelFrame08.grid(row=4, column=1, padx=5, pady=10)
+        self.labelFrame08.grid(row=5, column=1, padx=5, pady=10)
 
         self.grouplist = Listbox(self.labelFrame05, selectmode=EXTENDED,
                                  width=60, height=10,
@@ -107,6 +109,7 @@ class Root(Tk):
         self.button14()
         self.button15()
         self.button16()
+        self.button17()
 
         self.OptionList = {'RFP': 2, 'GFP': 1}
         self.variable = StringVar(self)
@@ -122,15 +125,15 @@ class Root(Tk):
 
         opt_statistic = OptionMenu(self.labelFrame08, self.variable_statistic, *self.OptionList_statistic.keys())
         opt_statistic.config(width=10, font=('Helvetica', 10))
-        opt_statistic.grid(row=1, column=3, padx=20, pady=20)
+        opt_statistic.grid(row=2, column=3, padx=20, pady=20)
 
         self.w2 = Scale(self.labelFrame03, from_=0, to=255, tickinterval=100, orient=HORIZONTAL, length=100)
         self.w2.grid(row=1, column=2)
         self.w2.set(23)
 
-        self.bins_label = Label(self.labelFrame08, text='bin size').grid(row=2, column=1)
+        self.bins_label = Label(self.labelFrame08, text='bin size').grid(row=3, column=1)
         self.bins_input = Scale(self.labelFrame08, from_=0, to=100, tickinterval=50, orient=HORIZONTAL, length=100)
-        self.bins_input.grid(row=2, column=2)
+        self.bins_input.grid(row=3, column=2)
         self.bins_input.set(10)
 
         self.FLAG_FIRST_EXPORT = True
@@ -210,17 +213,21 @@ class Root(Tk):
         button7 = ttk.Button(self.labelFrame05, text="Delete", command=self.delete)
         button7.grid(row=2, column=1)
 
+    def button17(self):
+        button13 = ttk.Button(self.labelFrame08, text="3D Frequency", command=self.frequency_3d)
+        button13.grid(row=1, column=1)
+
     def button13(self):
         button13 = ttk.Button(self.labelFrame08, text="Group 1", command=self.statistic_group_1)
-        button13.grid(row=1, column=1)
+        button13.grid(row=2, column=1)
 
     def button14(self):
         button14 = ttk.Button(self.labelFrame08, text="Group 2", command=self.statistic_group_2)
-        button14.grid(row=1, column=2)
+        button14.grid(row=2, column=2)
 
     def button15(self):
         button14 = ttk.Button(self.labelFrame08, text="Apply", command=self.statistic_run)
-        button14.grid(row=2, column=3)
+        button14.grid(row=3, column=3)
 
     def delete(self) -> None:
         select_item = self.grouplist.curselection()
@@ -284,14 +291,17 @@ class Root(Tk):
         current_obj = self.object_list[index]
 
         pixels = current_img.load()
+        self.object_list[index].mask_th = pixels
         for i in current_obj.roi:
             x = i[1]
             y = i[0]
             if pixels[int(y), int(x)][option_list[self.variable.get()]] >= self.w2.get():
                 if self.variable.get() == 'RFP':
-                    pixels[int(y), int(x)] = (0, 255, 0)
-                else:
                     pixels[int(y), int(x)] = (255, 0, 0)
+                else:
+                    pixels[int(y), int(x)] = (0, 255, 0)
+                          
+        
         current_obj.win1.image = current_img
         current_obj.threshold = self.w2.get()
         current_obj.win1.show_image()
@@ -300,8 +310,9 @@ class Root(Tk):
         self.grouplist.delete(index, index)
         self.grouplist.insert(index, current_obj.name + ': ' + str(self.w2.get()))
         self.object_list[index].threshold = self.w2.get()
+        print("THRESHOLD Saved")
         self.object_list[index].channel = self.OptionList[self.variable.get()]
-        print(self.object_list[index].channel)
+        
         return current_obj.win1
 
     def run(self):
@@ -336,11 +347,14 @@ class Root(Tk):
     def draw_axis(self):
         index = self.get_index()[0]
         filename = self.object_list[index].alpha
-        self.object_list[index].curve = bezierPD.BezierPD(filename=filename, roi=self.object_list[index].roi).run("Axis")
+        axis_pd, intersect_list = bezierPD.BezierPD(filename=filename, roi=self.object_list[index].roi).run("Axis")
+        self.object_list[index].intersect_list = intersect_list
+        self.object_list[index].curve = set(map(tuple, axis_pd))
         if self.object_list[index].curve is not None:
             self.FLAG_AXIS_SAVED = True
             print("Axis Saved")
         return
+
 
     def exclude_regions(self):
 
@@ -404,8 +418,8 @@ class Root(Tk):
     def amputation_plane(self):
         index = self.get_index()[0]
         filename = self.object_list[index].alpha
-        self.object_list[index].amp_plane = set(map(tuple, bezierPD.BezierPD(filename=filename,
-                                                                        roi=self.object_list[index].roi).run("Amputation Plane")))
+        ap_plane, intersect_ap_list = bezierPD.BezierPD(filename=filename, roi=self.object_list[index].roi).run("Amputation Plane")
+        self.object_list[index].amp_plane = set(map(tuple, ap_plane))
         if self.object_list[index].amp_plane is not None:
             print("Amputation Plane Saved")
         return
@@ -445,6 +459,11 @@ class Root(Tk):
                 return group_stat.Statistics(self.group_1, self.group_2, self.bins_input.get(), self.variable_statistic.get())
             else:
                 print("You need to add groups first")
+    
+    def frequency_3d(self):
+        index = self.get_index()[0]
+        fp.data_collection(list(self.object_list[index].curve), self.object_list[index].intersect_list, self.object_list[index].mask_th, self.object_list[index].threshold, self.object_list[index].channel)
+
 
     def export_all(self):
         try:
@@ -463,7 +482,7 @@ class Root(Tk):
                                         defaultextension=".p")
             list_files_import = pickle.load(open(open_path, 'rb'))
             for f in list_files_import:
-                print(f)
+                
                 self.object_list.append(f)
                 self.grouplist.insert(END, f.name)
                 if f.roi is not None:
@@ -476,6 +495,9 @@ class Root(Tk):
             print(e)
 
 def main():
+    if os.environ.get('DISPLAY','') == '':
+        print('no display found. Using :0.0')
+        os.environ.__setitem__('DISPLAY', ':0.0')
     root = Root()
     root.protocol('WM_DELETE_WINDOW', root.destroy)
     root.mainloop()

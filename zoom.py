@@ -33,7 +33,7 @@ class Zoom_Advanced(ttk.Frame):
         ttk.Frame.__init__(self, master=mainframe)
         # self.master.wm_iconbitmap('logosysbio.ico')
         self.master.title('view')
-        self.master.minsize(500, 450)
+        self.master.minsize(1000, 500)
         self.master.protocol('WM_DELETE_WINDOW', self.cerrar)
         # Vertical and horizontal scrollbars for canvas
         vbar = AutoScrollbar(self.master, orient='vertical')
