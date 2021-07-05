@@ -462,7 +462,7 @@ class Root(Tk):
     
     def frequency_3d(self):
         index = self.get_index()[0]
-        fp.data_collection(list(self.object_list[index].curve), self.object_list[index].intersect_list, self.object_list[index].mask_th, self.object_list[index].threshold, self.object_list[index].channel)
+        fp.data_collection(list(self.object_list[index].curve), self.object_list[index].amp_plane, self.object_list[index].intersect_list, self.object_list[index].mask_th, self.object_list[index].threshold, self.object_list[index].channel)
 
 
     def export_all(self):
