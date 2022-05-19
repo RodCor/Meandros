@@ -122,6 +122,7 @@ class Root(Tk):
         self.button15()
         self.button16()
         self.button17()
+        self.button18()
 
         self.OptionList = {'RFP': 2, 'GFP': 1}
         self.variable = StringVar(self)
@@ -240,6 +241,10 @@ class Root(Tk):
     def button15(self):
         button14 = ttk.Button(self.labelFrame08, text="Apply", command=self.statistic_run)
         button14.grid(row=3, column=3)
+
+    def button18(self):
+        button18 = ttk.Button(self.labelFrame08, text="Magic Reports", command=self.reports_magic)
+        button18.grid(row=4, column=3)
 
     def delete(self) -> None:
         select_item = self.grouplist.curselection()
@@ -519,6 +524,11 @@ class Root(Tk):
 
         except Exception as e:
             print(e)
+
+
+########## TODO
+    def reports_magic(self):
+        print("Sarasas")
 
 def main():
     if os.environ.get('DISPLAY','') == '':
