@@ -1,11 +1,16 @@
 import numpy as np
-from mpl_toolkits import mplot3d
+from mpl_toolkits.mplot3d import Axes3D
 import matplotlib
 import matplotlib.pyplot as plt
 import math
 import bezier
 
+## SURFACE PLOT PIXEL INTENSITY
 
+## Arriba del Thresh > Verde
+## Abajo > Rojo
+
+# Thresh = 45
 
 def data_collection(pd_axis, ap_axis, intersection_list, pixels_th, value_th, color_th):
 

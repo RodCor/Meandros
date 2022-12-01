@@ -1,1 +1,4 @@
 /Delivery
+/jpeg_images
+*.pyc
+__pycache__

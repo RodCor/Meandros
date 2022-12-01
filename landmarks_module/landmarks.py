@@ -5,11 +5,11 @@ import numpy as np
 
 class Landmarks(bezierPD.BezierPD):
 
-    def __init__(self, filename=None):  # probar pasar como arg el objeto, no el path,
+    def __init__(self, filename=None, ctrl_points = []):  # probar pasar como arg el objeto, no el path,
         # para ver si puedo actualizar el axis mientras grafico
         self.img = cv2.imread(filename)
         self.filename = filename
-        self.ctrlPoints = []
+        self.ctrlPoints = ctrl_points
         self.INSERT_FLAG = False  # key: 'i'
         self.MOVE_FLAG = False  # key: 'm'
         self.ACTIVE_MOV_FLAG = False
