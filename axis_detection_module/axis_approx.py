@@ -2,14 +2,30 @@ import pandas as pd
 import numpy as np
 
 
+def check_max_distance(df_contour):
+    axis_bin = 'X'
+    right = df_contour.nlargest(1, [axis_bin])
+    left = df_contour.nsmallest(1, [axis_bin])
+    distance_x = right[axis_bin].values.tolist()[0] - left[axis_bin].values.tolist()[0]
+    axis_bin = 'Y'
+    right = df_contour.nlargest(1, [axis_bin])
+    left = df_contour.nsmallest(1, [axis_bin])
+    distance_y = right[axis_bin].values.tolist()[0] - left[axis_bin].values.tolist()[0]
+    if distance_x> distance_y:
+        return 'X', 0
+    else:
+        return 'Y', 1
+    
+
 def approx_line(ctr_points, class_id):
     df_contour =  pd.DataFrame(ctr_points, columns =['X', 'Y'])
-    if class_id == 0:
-        axis_bin = 'Y'
-        axis_max = 1
-    else:
-        axis_bin = 'X'
-        axis_max = 0
+    # if class_id == 0:
+    #     axis_bin = 'Y'
+    #     axis_max = 1
+    # else:
+    #     axis_bin = 'X'
+    #     axis_max = 0
+    axis_bin, axis_max = check_max_distance(df_contour)
     right = df_contour.nlargest(1, [axis_bin])
     left = df_contour.nsmallest(1, [axis_bin])
     cr = right.values.tolist()[0]
@@ -28,7 +44,6 @@ def approx_line(ctr_points, class_id):
     max_min(a_df)
     max_min(b_df)
     line_aprox = line_generator(a_df, b_df,cr,cl)
-    print(line_aprox)
     return line_aprox
 
 

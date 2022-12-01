@@ -62,11 +62,13 @@ class BezierPD(windows_App.App):
                             a.append([1, pd[i][0]])
                 except IndexError:
                     print('Index Error', k)
-                slope = math_aux.min_cuadr(y, a)[1]
-                angle = math.atan(-1 / slope) * float(57.2958)
-                b = math_aux.min_cuadr(y, a)[0]
+                slope = np.linalg.lstsq(y,a, rcond=None)[1][1]
+                # slope = math_aux.min_cuadr(y, a)[1]
+                #angle = math.atan(-1 / slope) * float(57.2958)
+                #b = math_aux.min_cuadr(y, a)[0]
+                b = np.linalg.lstsq(y,a, rcond=None)[0][0][0]
                 pt_y = b + slope * (pd[k][0])
-                intersection = math_aux.f_(pd[k][0], int(pt_y), -(1 / slope)) & self.roi
+                intersection = math_aux.f(pd[k][0], int(pt_y), -(1 / slope)) & self.roi
                 intersection_list = list(intersection)
                 self.intersection.append(intersection_list)
                 
