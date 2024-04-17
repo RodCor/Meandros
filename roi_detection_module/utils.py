@@ -543,10 +543,10 @@ def unmold_mask(mask, bbox, image_shape):
     threshold = 0.5
     y1, x1, y2, x2 = bbox
     mask = resize(mask, (y2 - y1, x2 - x1))
-    mask = np.where(mask >= threshold, 1, 0).astype(np.bool)
+    mask = np.where(mask >= threshold, 1, 0).astype(np.bool_)
 
     # Put the mask in the right location.
-    full_mask = np.zeros(image_shape[:2], dtype=np.bool)
+    full_mask = np.zeros(image_shape[:2], dtype=np.bool_)
     full_mask[y1:y2, x1:x2] = mask
     return full_mask
 

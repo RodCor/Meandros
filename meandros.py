@@ -90,6 +90,7 @@ class File:
         self.roi = None
         self.threshold = None
         self.curve = None
+        self.axis_list = None
         self.exclude = None
         self.landmarks = None
         self.amp_plane = None
@@ -344,7 +345,7 @@ class Root(Tk):
             filename = filedialog.askopenfilename(initialdir="",
                                                   title='Select signal chanel',
                                                   multiple=True,
-                                                  filetypes=(("tif files", "*.tif"), ("jpg files", "*.jpg"), ("all files", "*.*")))
+                                                  filetypes=(("jpg files", "*.jpg"), ("tif files", "*.tif"), ("all files", "*.*")))
             if len(filename):
                 for k in enumerate(filename):  # range(len(filename)):
                     finalname = os.path.splitext(os.path.split(k[1])[1])[0]
@@ -432,11 +433,15 @@ class Root(Tk):
             image_tif = fix_tif(filename)
         else:
             image_tif = filename
-        approx_pd = axis_approx.approx_line(self.object_list[index].ctrlPoints, self.object_list[index].class_id)
-        approx_pd = [tuple(x) for x in approx_pd.values]
+        if self.object_list[index].axis_list is None:
+            approx_pd = axis_approx.approx_line(self.object_list[index].ctrlPoints, self.object_list[index].class_id)
+            approx_pd = [tuple(x) for x in approx_pd.values]
+        else:
+            approx_pd = self.object_list[index].axis_list
         axis_pd, intersect_list = bezierPD.BezierPD(filename=image_tif, roi=self.object_list[index].roi, ctrlPoints=approx_pd).run("Axis")
         self.object_list[index].intersect_list = intersect_list
         self.object_list[index].curve = set(map(tuple, axis_pd))
+        self.object_list[index].axis_list = approx_pd
         if self.object_list[index].curve is not None:
             self.FLAG_AXIS_SAVED = True
             messagebox.showinfo(title="Information", message=f"Axis Saved")
@@ -474,14 +479,14 @@ class Root(Tk):
                 self.FLAG_ROI_LOADED = True
                 messagebox.showinfo(title="Information", message=f"ROI Saved")
                 # ### Save CSV for Gastruloids
-                # import csv
-                # f = open('Contour_BrightField_v2.csv', 'a+')
-                # writer = csv.writer(f)
-                # name = self.object_list[index].name
-                # for x in self.object_list[index].ctrlPoints:
-                #     r = [x[0], x[1], name]
-                #     writer.writerow(r)
-                # f.close()
+                import csv
+                f = open('contour_brightfield.csv.csv', 'a+')
+                writer = csv.writer(f)
+                name = self.object_list[index].name
+                for x in self.object_list[index].ctrlPoints:
+                    r = [x[0], x[1], name]
+                    writer.writerow(r)
+                f.close()
                 # ##
         else:
             messagebox.showinfo(title="Alert!", message=f"You must select a model first")
@@ -650,7 +655,6 @@ class Root(Tk):
 
 def main():
     if os.environ.get('DISPLAY','') == '':
-        #print('no display found. Using :0.0')
         os.environ.__setitem__('DISPLAY', ':0.0')
     root = Root()
     root.protocol('WM_DELETE_WINDOW', root.destroy)

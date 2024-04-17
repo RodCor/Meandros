@@ -23,6 +23,7 @@ class BezierPD(windows_App.App):
         self.SHOW_LINES = False # key: 'r'
         self.roi = roi
         self.intersection = []
+        self.thickness = 8
         
 
     def line_control(self, k):
@@ -73,11 +74,14 @@ class BezierPD(windows_App.App):
                 self.intersection.append(intersection_list)
                 
                 try:
-                    for i in range(len(intersection_list)):
-                        self.img2[intersection_list[i][1], intersection_list[i][0]] = [18, 156, 243]
+                    for i in range(len(intersection_list) - 1):
+                        pt1 = (intersection_list[i][0], intersection_list[i][1])
+                        pt2 = (intersection_list[i + 1][0], intersection_list[i + 1][1])
+                        # Dibuja una línea más gruesa
+                        cv2.polylines(self.img2, [np.array([pt1, pt2])], isClosed=False, color=[18, 156, 243],
+                                      thickness=self.thickness, lineType=cv2.LINE_AA)
                 except IndexError:
                     print('Index Error')
-                
                 
 
     def return_worker(self):

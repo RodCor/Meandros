@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-
+import seaborn as sns
 
 def check_max_distance(df_contour):
     axis_bin = 'X'
@@ -19,12 +19,6 @@ def check_max_distance(df_contour):
 
 def approx_line(ctr_points, class_id):
     df_contour =  pd.DataFrame(ctr_points, columns =['X', 'Y'])
-    # if class_id == 0:
-    #     axis_bin = 'Y'
-    #     axis_max = 1
-    # else:
-    #     axis_bin = 'X'
-    #     axis_max = 0
     axis_bin, axis_max = check_max_distance(df_contour)
     right = df_contour.nlargest(1, [axis_bin])
     left = df_contour.nsmallest(1, [axis_bin])
@@ -106,3 +100,11 @@ def half_lines(list_point, cr):
             po = px
             aux_temp.remove(px)
     return result_list
+
+def plot_axis(df_contour):
+    graph =sns.scatterplot(x = df_contour['X'], y = df_contour['Y'],  color = 'red') 
+    sns.scatterplot(x="X", y="Y", data=a_df, color = "yellow")
+    sns.scatterplot(x="X", y="Y", data=b_df, color = "orange")
+    sns.scatterplot(x="X", y="Y", data=line_aprox, color = "blue")
+    fig = graph.figure
+    fig.set_size_inches(10,10)
