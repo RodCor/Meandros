@@ -5,7 +5,7 @@ import generals.windows_App as windows_App
 
 class RoiSelection(windows_App.App):
 
-    def __init__(self, filename=None, approx = None):
+    def __init__(self, filename=None, approx=None):
 
         self.img = cv2.imread(filename)
         self.filename = filename
@@ -19,8 +19,12 @@ class RoiSelection(windows_App.App):
         self.SHOW_LINES = None
 
     def return_worker(self):
-        mask2 = np.transpose(np.nonzero(cv2.fillPoly(np.zeros(self.img2.shape[:2], np.uint8),
-                                                    [self.roi], (255, 0, 0))))
+        mask2 = np.transpose(
+            np.nonzero(
+                cv2.fillPoly(
+                    np.zeros(self.img2.shape[:2], np.uint8), [self.roi], (255, 0, 0)
+                )
+            )
+        )
         result = set(map(tuple, mask2[:, [1, 0]]))
         return result, self.ctrlPoints
-

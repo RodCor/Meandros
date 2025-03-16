@@ -1,7 +1,9 @@
-import sys
-import os
+"""
+Mask R-CNN
+Common utility functions and classes with some modifications.
+"""
+
 import logging
-import math
 import random
 import numpy as np
 import tensorflow as tf
@@ -15,16 +17,20 @@ import warnings
 from distutils.version import LooseVersion
 
 # URL from which to download the latest COCO trained weights
-COCO_MODEL_URL = "https://github.com/matterport/Mask_RCNN/releases/download/v2.0/mask_rcnn_coco.h5"
+COCO_MODEL_URL = (
+    "https://github.com/matterport/Mask_RCNN/releases/download/v2.0/mask_rcnn_coco.h5"
+)
 
 
 ############################################################
 #  Bounding Boxes
 ############################################################
 
+
 def extract_bboxes(mask):
     """Compute bounding boxes from masks.
     mask: [height, width, num_instances]. Mask pixels are either 1 or 0.
+
     Returns: bbox array [num_instances, (y1, x1, y2, x2)].
     """
     boxes = np.zeros([mask.shape[-1], 4], dtype=np.int32)
@@ -53,6 +59,7 @@ def compute_iou(box, boxes, box_area, boxes_area):
     boxes: [boxes_count, (y1, x1, y2, x2)]
     box_area: float. the area of 'box'
     boxes_area: array of length boxes_count.
+
     Note: the areas are passed in rather than calculated here for
     efficiency. Calculate once in the caller to avoid duplicate work.
     """
@@ -70,6 +77,7 @@ def compute_iou(box, boxes, box_area, boxes_area):
 def compute_overlaps(boxes1, boxes2):
     """Computes IoU overlaps between two sets of boxes.
     boxes1, boxes2: [N, (y1, x1, y2, x2)].
+
     For better performance, pass the largest set first and the smaller second.
     """
     # Areas of anchors and GT boxes
@@ -89,13 +97,13 @@ def compute_overlaps_masks(masks1, masks2):
     """Computes IoU overlaps between two sets of masks.
     masks1, masks2: [Height, Width, instances]
     """
-    
+
     # If either set of masks is empty return empty result
     if masks1.shape[-1] == 0 or masks2.shape[-1] == 0:
         return np.zeros((masks1.shape[-1], masks2.shape[-1]))
     # flatten masks and compute their areas
-    masks1 = np.reshape(masks1 > .5, (-1, masks1.shape[-1])).astype(np.float32)
-    masks2 = np.reshape(masks2 > .5, (-1, masks2.shape[-1])).astype(np.float32)
+    masks1 = np.reshape(masks1 > 0.5, (-1, masks1.shape[-1])).astype(np.float32)
+    masks2 = np.reshape(masks2 > 0.5, (-1, masks2.shape[-1])).astype(np.float32)
     area1 = np.sum(masks1, axis=0)
     area2 = np.sum(masks2, axis=0)
 
@@ -224,10 +232,12 @@ def box_refinement(box, gt_box):
 #  Dataset
 ############################################################
 
+
 class Dataset(object):
     """The base class for dataset classes.
     To use it, create a new class that adds functions specific to the dataset
     you want to use. For example:
+
     class CatsAndDogsDataset(Dataset):
         def load_cats_and_dogs(self):
             ...
@@ -235,6 +245,7 @@ class Dataset(object):
             ...
         def image_reference(self, image_id):
             ...
+
     See COCODataset and ShapesDataset as examples.
     """
 
@@ -249,15 +260,17 @@ class Dataset(object):
         assert "." not in source, "Source name cannot contain a dot"
         # Does the class exist already?
         for info in self.class_info:
-            if info['source'] == source and info["id"] == class_id:
+            if info["source"] == source and info["id"] == class_id:
                 # source.class_id combination already available, skip
                 return
         # Add the class
-        self.class_info.append({
-            "source": source,
-            "id": class_id,
-            "name": class_name,
-        })
+        self.class_info.append(
+            {
+                "source": source,
+                "id": class_id,
+                "name": class_name,
+            }
+        )
 
     def add_image(self, source, image_id, path, **kwargs):
         image_info = {
@@ -271,6 +284,7 @@ class Dataset(object):
     def image_reference(self, image_id):
         """Return a link to the image in its source Website or details about
         the image that help looking it up or debugging it.
+
         Override for your dataset, but pass to this function
         if you encounter images not in your dataset.
         """
@@ -278,6 +292,7 @@ class Dataset(object):
 
     def prepare(self, class_map=None):
         """Prepares the Dataset class for use.
+
         TODO: class map is not supported yet. When done, it should handle mapping
               classes from different datasets to the same class ID.
         """
@@ -294,13 +309,17 @@ class Dataset(object):
         self._image_ids = np.arange(self.num_images)
 
         # Mapping from source class and image IDs to internal IDs
-        self.class_from_source_map = {"{}.{}".format(info['source'], info['id']): id
-                                      for info, id in zip(self.class_info, self.class_ids)}
-        self.image_from_source_map = {"{}.{}".format(info['source'], info['id']): id
-                                      for info, id in zip(self.image_info, self.image_ids)}
+        self.class_from_source_map = {
+            "{}.{}".format(info["source"], info["id"]): id
+            for info, id in zip(self.class_info, self.class_ids)
+        }
+        self.image_from_source_map = {
+            "{}.{}".format(info["source"], info["id"]): id
+            for info, id in zip(self.image_info, self.image_ids)
+        }
 
         # Map sources to class_ids they support
-        self.sources = list(set([i['source'] for i in self.class_info]))
+        self.sources = list(set([i["source"] for i in self.class_info]))
         self.source_class_ids = {}
         # Loop over datasets
         for source in self.sources:
@@ -308,11 +327,12 @@ class Dataset(object):
             # Find classes that belong to this dataset
             for i, info in enumerate(self.class_info):
                 # Include BG class in all datasets
-                if i == 0 or source == info['source']:
+                if i == 0 or source == info["source"]:
                     self.source_class_ids[source].append(i)
 
     def map_source_class_id(self, source_class_id):
         """Takes a source class ID and returns the int class ID assigned to it.
+
         For example:
         dataset.map_source_class_id("coco.12") -> 23
         """
@@ -321,8 +341,8 @@ class Dataset(object):
     def get_source_class_id(self, class_id, source):
         """Map an internal class ID to the corresponding class ID in the source dataset."""
         info = self.class_info[class_id]
-        assert info['source'] == source
-        return info['id']
+        assert info["source"] == source
+        return info["id"]
 
     @property
     def image_ids(self):
@@ -336,10 +356,9 @@ class Dataset(object):
         return self.image_info[image_id]["path"]
 
     def load_image(self, image_id):
-        """Load the specified image and return a [H,W,3] Numpy array.
-        """
+        """Load the specified image and return a [H,W,3] Numpy array."""
         # Load image
-        image = skimage.io.imread(self.image_info[image_id]['path'])
+        image = skimage.io.imread(self.image_info[image_id]["path"])
         # If grayscale. Convert to RGB for consistency.
         if image.ndim != 3:
             image = skimage.color.gray2rgb(image)
@@ -350,9 +369,11 @@ class Dataset(object):
 
     def load_mask(self, image_id):
         """Load instance masks for the given image.
+
         Different datasets use different ways to store masks. Override this
         method to load instance masks and return them in the form of am
         array of binary masks of shape [height, width, instances].
+
         Returns:
             masks: A bool array of shape [height, width, instance count] with
                 a binary mask per instance.
@@ -360,7 +381,9 @@ class Dataset(object):
         """
         # Override this function to load a mask from your dataset.
         # Otherwise, it returns an empty mask.
-        logging.warning("You are using the default load_mask(), maybe you need to define your own one.")
+        logging.warning(
+            "You are using the default load_mask(), maybe you need to define your own one."
+        )
         mask = np.empty([0, 0, 0])
         class_ids = np.empty([0], np.int32)
         return mask, class_ids
@@ -368,6 +391,7 @@ class Dataset(object):
 
 def resize_image(image, min_dim=None, max_dim=None, min_scale=None, mode="square"):
     """Resizes an image keeping the aspect ratio unchanged.
+
     min_dim: if provided, resizes the image such that it's smaller
         dimension == min_dim
     max_dim: if provided, ensures that the image longest side doesn't
@@ -387,6 +411,7 @@ def resize_image(image, min_dim=None, max_dim=None, min_scale=None, mode="square
               on min_dim and min_scale, then picks a random crop of
               size min_dim x min_dim. Can be used in training only.
               max_dim is not used in this mode.
+
     Returns:
     image: the resized image
     window: (y1, x1, y2, x2). If max_dim is provided, padding might
@@ -398,6 +423,7 @@ def resize_image(image, min_dim=None, max_dim=None, min_scale=None, mode="square
     """
     # Keep track of image dtype and return results in the same dtype
     image_dtype = image.dtype
+    # print(image_dtype)
     # Default window (y1, x1, y2, x2) and default scale == 1.
     h, w = image.shape[:2]
     window = (0, 0, h, w)
@@ -423,8 +449,7 @@ def resize_image(image, min_dim=None, max_dim=None, min_scale=None, mode="square
 
     # Resize image using bilinear interpolation
     if scale != 1:
-        image = resize(image, (round(h * scale), round(w * scale)),
-                       preserve_range=True)
+        image = resize(image, (round(h * scale), round(w * scale)), preserve_range=True)
 
     # Need padding or cropping?
     if mode == "square":
@@ -435,7 +460,7 @@ def resize_image(image, min_dim=None, max_dim=None, min_scale=None, mode="square
         left_pad = (max_dim - w) // 2
         right_pad = max_dim - w - left_pad
         padding = [(top_pad, bottom_pad), (left_pad, right_pad), (0, 0)]
-        image = np.pad(image, padding, mode='constant', constant_values=0)
+        image = np.pad(image, padding, mode="constant", constant_values=0)
         window = (top_pad, left_pad, h + top_pad, w + left_pad)
     elif mode == "pad64":
         h, w = image.shape[:2]
@@ -456,7 +481,7 @@ def resize_image(image, min_dim=None, max_dim=None, min_scale=None, mode="square
         else:
             left_pad = right_pad = 0
         padding = [(top_pad, bottom_pad), (left_pad, right_pad), (0, 0)]
-        image = np.pad(image, padding, mode='constant', constant_values=0)
+        image = np.pad(image, padding, mode="constant", constant_values=0)
         window = (top_pad, left_pad, h + top_pad, w + left_pad)
     elif mode == "crop":
         # Pick a random crop
@@ -464,7 +489,7 @@ def resize_image(image, min_dim=None, max_dim=None, min_scale=None, mode="square
         y = random.randint(0, (h - min_dim))
         x = random.randint(0, (w - min_dim))
         crop = (y, x, min_dim, min_dim)
-        image = image[y:y + min_dim, x:x + min_dim]
+        image = image[y : y + min_dim, x : x + min_dim]
         window = (0, 0, min_dim, min_dim)
     else:
         raise Exception("Mode {} not supported".format(mode))
@@ -475,6 +500,7 @@ def resize_mask(mask, scale, padding, crop=None):
     """Resizes a mask using the given scale and padding.
     Typically, you get the scale and padding from resize_image() to
     ensure both, the image and the mask, are resized consistently.
+
     scale: mask scaling factor
     padding: Padding to add to the mask in the form
             [(top, bottom), (left, right), (0, 0)]
@@ -486,15 +512,16 @@ def resize_mask(mask, scale, padding, crop=None):
         mask = scipy.ndimage.zoom(mask, zoom=[scale, scale, 1], order=0)
     if crop is not None:
         y, x, h, w = crop
-        mask = mask[y:y + h, x:x + w]
+        mask = mask[y : y + h, x : x + w]
     else:
-        mask = np.pad(mask, padding, mode='constant', constant_values=0)
+        mask = np.pad(mask, padding, mode="constant", constant_values=0)
     return mask
 
 
 def minimize_mask(bbox, mask, mini_shape):
     """Resize masks to a smaller version to reduce memory load.
     Mini-masks can be resized back to image scale using expand_masks()
+
     See inspect_data.ipynb notebook for more details.
     """
     mini_mask = np.zeros(mini_shape + (mask.shape[-1],), dtype=bool)
@@ -505,15 +532,16 @@ def minimize_mask(bbox, mask, mini_shape):
         m = m[y1:y2, x1:x2]
         if m.size == 0:
             raise Exception("Invalid bounding box with area of zero")
-        # Resize with bilinear interpolation
-        m = resize(m, mini_shape)
-        mini_mask[:, :, i] = np.around(m).astype(np.bool)
+        # Resize with nearest neighbor interpolation for boolean masks
+        m = resize(m, mini_shape, order=0, preserve_range=True)
+        mini_mask[:, :, i] = np.around(m).astype(np.bool_)
     return mini_mask
 
 
 def expand_mask(bbox, mini_mask, image_shape):
     """Resizes mini masks back to image size. Reverses the change
     of minimize_mask().
+
     See inspect_data.ipynb notebook for more details.
     """
     mask = np.zeros(image_shape[:2] + (mini_mask.shape[-1],), dtype=bool)
@@ -538,6 +566,7 @@ def unmold_mask(mask, bbox, image_shape):
     to its original shape.
     mask: [height, width] of type float. A small, typically 28x28 mask.
     bbox: [y1, x1, y2, x2]. The box to fit the mask in.
+
     Returns a binary mask with the same size as the original image.
     """
     threshold = 0.5
@@ -554,6 +583,7 @@ def unmold_mask(mask, bbox, image_shape):
 ############################################################
 #  Anchors
 ############################################################
+
 
 def generate_anchors(scales, ratios, shape, feature_stride, anchor_stride):
     """
@@ -584,21 +614,23 @@ def generate_anchors(scales, ratios, shape, feature_stride, anchor_stride):
     box_heights, box_centers_y = np.meshgrid(heights, shifts_y)
 
     # Reshape to get a list of (y, x) and a list of (h, w)
-    box_centers = np.stack(
-        [box_centers_y, box_centers_x], axis=2).reshape([-1, 2])
+    box_centers = np.stack([box_centers_y, box_centers_x], axis=2).reshape([-1, 2])
     box_sizes = np.stack([box_heights, box_widths], axis=2).reshape([-1, 2])
 
     # Convert to corner coordinates (y1, x1, y2, x2)
-    boxes = np.concatenate([box_centers - 0.5 * box_sizes,
-                            box_centers + 0.5 * box_sizes], axis=1)
+    boxes = np.concatenate(
+        [box_centers - 0.5 * box_sizes, box_centers + 0.5 * box_sizes], axis=1
+    )
     return boxes
 
 
-def generate_pyramid_anchors(scales, ratios, feature_shapes, feature_strides,
-                             anchor_stride):
+def generate_pyramid_anchors(
+    scales, ratios, feature_shapes, feature_strides, anchor_stride
+):
     """Generate anchors at different levels of a feature pyramid. Each scale
     is associated with a level of the pyramid, but each ratio is used in
     all levels of the pyramid.
+
     Returns:
     anchors: [N, (y1, x1, y2, x2)]. All generated anchors in one array. Sorted
         with the same order of the given scales. So, anchors of scale[0] come
@@ -608,8 +640,11 @@ def generate_pyramid_anchors(scales, ratios, feature_shapes, feature_strides,
     # [anchor_count, (y1, x1, y2, x2)]
     anchors = []
     for i in range(len(scales)):
-        anchors.append(generate_anchors(scales[i], ratios, feature_shapes[i],
-                                        feature_strides[i], anchor_stride))
+        anchors.append(
+            generate_anchors(
+                scales[i], ratios, feature_shapes[i], feature_strides[i], anchor_stride
+            )
+        )
     return np.concatenate(anchors, axis=0)
 
 
@@ -617,19 +652,30 @@ def generate_pyramid_anchors(scales, ratios, feature_shapes, feature_strides,
 #  Miscellaneous
 ############################################################
 
+
 def trim_zeros(x):
     """It's common to have tensors larger than the available data and
     pad with zeros. This function removes rows that are all zeros.
+
     x: [rows, columns].
     """
     assert len(x.shape) == 2
     return x[~np.all(x == 0, axis=1)]
 
 
-def compute_matches(gt_boxes, gt_class_ids, gt_masks,
-                    pred_boxes, pred_class_ids, pred_scores, pred_masks,
-                    iou_threshold=0.5, score_threshold=0.0):
+def compute_matches(
+    gt_boxes,
+    gt_class_ids,
+    gt_masks,
+    pred_boxes,
+    pred_class_ids,
+    pred_scores,
+    pred_masks,
+    iou_threshold=0.5,
+    score_threshold=0.0,
+):
     """Finds matches between prediction and ground truth instances.
+
     Returns:
         gt_match: 1-D array. For each GT box it has the index of the matched
                   predicted box.
@@ -640,9 +686,9 @@ def compute_matches(gt_boxes, gt_class_ids, gt_masks,
     # Trim zero padding
     # TODO: cleaner to do zero unpadding upstream
     gt_boxes = trim_zeros(gt_boxes)
-    gt_masks = gt_masks[..., :gt_boxes.shape[0]]
+    gt_masks = gt_masks[..., : gt_boxes.shape[0]]
     pred_boxes = trim_zeros(pred_boxes)
-    pred_scores = pred_scores[:pred_boxes.shape[0]]
+    pred_scores = pred_scores[: pred_boxes.shape[0]]
     # Sort predictions by score from high to low
     indices = np.argsort(pred_scores)[::-1]
     pred_boxes = pred_boxes[indices]
@@ -664,7 +710,7 @@ def compute_matches(gt_boxes, gt_class_ids, gt_masks,
         # 2. Remove low scores
         low_score_idx = np.where(overlaps[i, sorted_ixs] < score_threshold)[0]
         if low_score_idx.size > 0:
-            sorted_ixs = sorted_ixs[:low_score_idx[0]]
+            sorted_ixs = sorted_ixs[: low_score_idx[0]]
         # 3. Find the match
         for j in sorted_ixs:
             # If ground truth box is already matched, go to next one
@@ -684,10 +730,18 @@ def compute_matches(gt_boxes, gt_class_ids, gt_masks,
     return gt_match, pred_match, overlaps
 
 
-def compute_ap(gt_boxes, gt_class_ids, gt_masks,
-               pred_boxes, pred_class_ids, pred_scores, pred_masks,
-               iou_threshold=0.5):
+def compute_ap(
+    gt_boxes,
+    gt_class_ids,
+    gt_masks,
+    pred_boxes,
+    pred_class_ids,
+    pred_scores,
+    pred_masks,
+    iou_threshold=0.5,
+):
     """Compute Average Precision at a set IoU threshold (default 0.5).
+
     Returns:
     mAP: Mean Average Precision
     precisions: List of precisions at different class score thresholds.
@@ -696,9 +750,15 @@ def compute_ap(gt_boxes, gt_class_ids, gt_masks,
     """
     # Get matches and overlaps
     gt_match, pred_match, overlaps = compute_matches(
-        gt_boxes, gt_class_ids, gt_masks,
-        pred_boxes, pred_class_ids, pred_scores, pred_masks,
-        iou_threshold)
+        gt_boxes,
+        gt_class_ids,
+        gt_masks,
+        pred_boxes,
+        pred_class_ids,
+        pred_scores,
+        pred_masks,
+        iou_threshold,
+    )
 
     # Compute precision and recall at each prediction box step
     precisions = np.cumsum(pred_match > -1) / (np.arange(len(pred_match)) + 1)
@@ -716,39 +776,56 @@ def compute_ap(gt_boxes, gt_class_ids, gt_masks,
 
     # Compute mean AP over recall range
     indices = np.where(recalls[:-1] != recalls[1:])[0] + 1
-    mAP = np.sum((recalls[indices] - recalls[indices - 1]) *
-                 precisions[indices])
+    mAP = np.sum((recalls[indices] - recalls[indices - 1]) * precisions[indices])
 
     return mAP, precisions, recalls, overlaps
 
 
-def compute_ap_range(gt_box, gt_class_id, gt_mask,
-                     pred_box, pred_class_id, pred_score, pred_mask,
-                     iou_thresholds=None, verbose=1):
+def compute_ap_range(
+    gt_box,
+    gt_class_id,
+    gt_mask,
+    pred_box,
+    pred_class_id,
+    pred_score,
+    pred_mask,
+    iou_thresholds=None,
+    verbose=1,
+):
     """Compute AP over a range or IoU thresholds. Default range is 0.5-0.95."""
     # Default is 0.5 to 0.95 with increments of 0.05
     iou_thresholds = iou_thresholds or np.arange(0.5, 1.0, 0.05)
-    
+
     # Compute AP over range of IoU thresholds
     AP = []
     for iou_threshold in iou_thresholds:
-        ap, precisions, recalls, overlaps =\
-            compute_ap(gt_box, gt_class_id, gt_mask,
-                        pred_box, pred_class_id, pred_score, pred_mask,
-                        iou_threshold=iou_threshold)
+        ap, precisions, recalls, overlaps = compute_ap(
+            gt_box,
+            gt_class_id,
+            gt_mask,
+            pred_box,
+            pred_class_id,
+            pred_score,
+            pred_mask,
+            iou_threshold=iou_threshold,
+        )
         if verbose:
             print("AP @{:.2f}:\t {:.3f}".format(iou_threshold, ap))
         AP.append(ap)
     AP = np.array(AP).mean()
     if verbose:
-        print("AP @{:.2f}-{:.2f}:\t {:.3f}".format(
-            iou_thresholds[0], iou_thresholds[-1], AP))
+        print(
+            "AP @{:.2f}-{:.2f}:\t {:.3f}".format(
+                iou_thresholds[0], iou_thresholds[-1], AP
+            )
+        )
     return AP
 
 
 def compute_recall(pred_boxes, gt_boxes, iou):
     """Compute the recall at the given IoU threshold. It's an indication
     of how many GT boxes were found by the given prediction boxes.
+
     pred_boxes: [N, (y1, x1, y2, x2)] in image coordinates
     gt_boxes: [N, (y1, x1, y2, x2)] in image coordinates
     """
@@ -775,6 +852,7 @@ def batch_slice(inputs, graph_fn, batch_size, names=None):
     computation graph and then combines the results. It allows you to run a
     graph on a batch of inputs even if the graph is written to support one
     instance only.
+
     inputs: list of tensors. All must have the same first dimension length
     graph_fn: A function that returns a TF tensor that's part of a graph.
     batch_size: number of slices to divide the data into.
@@ -798,8 +876,7 @@ def batch_slice(inputs, graph_fn, batch_size, names=None):
     if names is None:
         names = [None] * len(outputs)
 
-    result = [tf.stack(o, axis=0, name=n)
-              for o, n in zip(outputs, names)]
+    result = [tf.stack(o, axis=0, name=n) for o, n in zip(outputs, names)]
     if len(result) == 1:
         result = result[0]
 
@@ -808,11 +885,14 @@ def batch_slice(inputs, graph_fn, batch_size, names=None):
 
 def download_trained_weights(coco_model_path, verbose=1):
     """Download COCO trained weights from Releases.
+
     coco_model_path: local path of COCO trained weights
     """
     if verbose > 0:
         print("Downloading pretrained model to " + coco_model_path + " ...")
-    with urllib.request.urlopen(COCO_MODEL_URL) as resp, open(coco_model_path, 'wb') as out:
+    with urllib.request.urlopen(COCO_MODEL_URL) as resp, open(
+        coco_model_path, "wb"
+    ) as out:
         shutil.copyfileobj(resp, out)
     if verbose > 0:
         print("... done downloading pretrained model!")
@@ -822,8 +902,10 @@ def norm_boxes(boxes, shape):
     """Converts boxes from pixel coordinates to normalized coordinates.
     boxes: [N, (y1, x1, y2, x2)] in pixel coordinates
     shape: [..., (height, width)] in pixels
+
     Note: In pixel coordinates (y2, x2) is outside the box. But in normalized
     coordinates it's inside the box.
+
     Returns:
         [N, (y1, x1, y2, x2)] in normalized coordinates
     """
@@ -837,8 +919,10 @@ def denorm_boxes(boxes, shape):
     """Converts boxes from normalized coordinates to pixel coordinates.
     boxes: [N, (y1, x1, y2, x2)] in normalized coordinates
     shape: [..., (height, width)] in pixels
+
     Note: In pixel coordinates (y2, x2) is outside the box. But in normalized
     coordinates it's inside the box.
+
     Returns:
         [N, (y1, x1, y2, x2)] in pixel coordinates
     """
@@ -848,9 +932,19 @@ def denorm_boxes(boxes, shape):
     return np.around(np.multiply(boxes, scale) + shift).astype(np.int32)
 
 
-def resize(image, output_shape, order=1, mode='constant', cval=0, clip=True,
-           preserve_range=False, anti_aliasing=False, anti_aliasing_sigma=None):
+def resize(
+    image,
+    output_shape,
+    order=1,
+    mode="constant",
+    cval=0,
+    clip=True,
+    preserve_range=False,
+    anti_aliasing=False,
+    anti_aliasing_sigma=None,
+):
     """A wrapper for Scikit-Image resize().
+
     Scikit-Image generates warnings on every call to resize() if it doesn't
     receive the right parameters. The right parameters depend on the version
     of skimage. This solves the problem by using different parameters per
@@ -860,12 +954,23 @@ def resize(image, output_shape, order=1, mode='constant', cval=0, clip=True,
         # New in 0.14: anti_aliasing. Default it to False for backward
         # compatibility with skimage 0.13.
         return skimage.transform.resize(
-            image, output_shape,
-            order=order, mode=mode, cval=cval, clip=clip,
-            preserve_range=preserve_range, anti_aliasing=anti_aliasing,
-            anti_aliasing_sigma=anti_aliasing_sigma)
+            image,
+            output_shape,
+            order=order,
+            mode=mode,
+            cval=cval,
+            clip=clip,
+            preserve_range=preserve_range,
+            anti_aliasing=anti_aliasing,
+            anti_aliasing_sigma=anti_aliasing_sigma,
+        )
     else:
         return skimage.transform.resize(
-            image, output_shape,
-            order=order, mode=mode, cval=cval, clip=clip,
-            preserve_range=preserve_range)
+            image,
+            output_shape,
+            order=order,
+            mode=mode,
+            cval=cval,
+            clip=clip,
+            preserve_range=preserve_range,
+        )

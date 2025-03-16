@@ -1,0 +1,94 @@
+#!/bin/bash
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m' # No Color
+
+# Function to print with color
+print_message() {
+    local color=$1
+    local message=$2
+    echo -e "${color}${message}${NC}"
+}
+
+# Check for Python installation
+print_message "$YELLOW" "Checking Python installation..."
+if ! command -v python3 >/dev/null 2>&1; then
+    if ! command -v python >/dev/null 2>&1; then
+        print_message "$RED" "Python is not installed. Please install Python 3.8 or higher."
+        exit 1
+    fi
+    PYTHON_CMD="python"
+else
+    PYTHON_CMD="python3"
+fi
+
+# Check Python version without using bc
+python_version=$($PYTHON_CMD -c 'import sys; v=sys.version_info; print(f"{v.major}.{v.minor}")')
+python_major=$(echo $python_version | cut -d. -f1)
+python_minor=$(echo $python_version | cut -d. -f2)
+
+if [ "$python_major" -lt 3 ] || ([ "$python_major" -eq 3 ] && [ "$python_minor" -lt 8 ]); then
+    print_message "$RED" "Python version must be 3.8 or higher. Current version: $python_version"
+    exit 1
+fi
+
+print_message "$GREEN" "Python $python_version found."
+
+# Determine the virtual environment paths based on OS
+if [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "win32" ]]; then
+    # Windows paths (Git Bash or Command Prompt)
+    VENV_PYTHON=".venv/Scripts/python.exe"
+    VENV_PIP=".venv/Scripts/pip.exe"
+else
+    # Unix paths
+    VENV_PYTHON=".venv/bin/python"
+    VENV_PIP=".venv/bin/pip"
+fi
+
+# Create and set up virtual environment
+if [ ! -d ".venv" ]; then
+    print_message "$YELLOW" "Creating virtual environment..."
+    $PYTHON_CMD -m venv .venv --upgrade-deps
+    if [ $? -ne 0 ]; then
+        print_message "$RED" "Failed to create virtual environment."
+        exit 1
+    fi
+fi
+
+# Ensure pip is installed in virtual environment
+print_message "$YELLOW" "Ensuring pip is available..."
+if [ ! -f "$VENV_PIP" ]; then
+    print_message "$YELLOW" "Installing pip in virtual environment..."
+    curl -sSL https://bootstrap.pypa.io/get-pip.py -o get-pip.py
+    $VENV_PYTHON get-pip.py --force-reinstall
+    rm get-pip.py
+fi
+
+# Upgrade pip in virtual environment
+print_message "$YELLOW" "Upgrading pip in virtual environment..."
+$VENV_PYTHON -m pip install --upgrade pip
+
+# Install UV in virtual environment
+print_message "$YELLOW" "Installing UV in virtual environment..."
+$VENV_PYTHON -m pip install --upgrade uv
+
+# Install dependencies using UV from virtual environment
+print_message "$YELLOW" "Installing Meandros dependencies..."
+if [ -f "requirements.lock" ]; then
+    print_message "$YELLOW" "Using requirements.lock for exact versions..."
+    $VENV_PYTHON -m uv pip sync requirements.lock
+else
+    print_message "$YELLOW" "Installing from pyproject.toml..."
+    $VENV_PYTHON -m uv pip install .
+fi
+
+if [ $? -eq 0 ]; then
+    print_message "$GREEN" "Meandros installation completed successfully!"
+    print_message "$YELLOW" "To run Meandros, use: ./run_meandros.sh"
+else
+    print_message "$RED" "Installation failed. Please check the error messages above."
+    exit 1
+fi 

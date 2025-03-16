@@ -1,29 +1,34 @@
 """
+This module provides an interactive interface for control point manipulation on images.
 
-=============================================================
+Control Point Operations:
 
-Documentación:
+    Addition:
+        Activate insertion mode by pressing 'i' key
+        Left-click desired image coordinates to place control points
+        Multiple points may be added sequentially
 
-1- Para agregar un punto de control presionar la tecla 'i' (insert)
-   y clickear (left buttom) sobre la imagen donde desee colocarlo.
-   (realizar esta tarea tantas veces como puntos de control desee agregar)
+    Translation:
+        Activate movement mode by pressing 'm' key
+        Click and drag control points to new positions using left mouse button
 
-2- Para mover los puntos de control presionar la tecla 'm' (move)
-   y manteniendo apretado el left buttom sobre el punto de control, desplazarse
-   hasta la nueva ubicación.
+    Termination:
+        Press ESC key to exit the application
 
-3- Para salir presione ESC
-
-=============================================================
-
+The interface allows precise placement and adjustment of control points for image analysis tasks.
 """
-
 
 import cv2
 import numpy as np
 
 
 class App:
+    """
+    Class to create a window to add control points to an image.
+    Args:
+        filename: str
+            Path to the image file.
+    """
 
     RED = [0, 0, 255]
     WHITE = [255, 255, 255]
@@ -32,7 +37,6 @@ class App:
     YELLOW = [255, 255, 0]
     GREEN = [0, 255, 0]
     COLORS = [RED, WHITE, BLUE, YELLOW, GREEN]
-
 
     thickness = 5
     epsilon = 10
@@ -50,7 +54,6 @@ class App:
         self.ind = None
         self.roi = None
         self.contour_points = None
-        
 
     def onmouse(self, event, x, y, flags, param):
 
@@ -91,7 +94,7 @@ class App:
         xy = np.asarray(self.ctrlPoints)
         xt, yt = xy[:, 0], xy[:, 1]
         d = np.hypot(xt - x, yt - y)
-        indseq, = np.nonzero(d == d.min())
+        (indseq,) = np.nonzero(d == d.min())
         ind = indseq[0]
         if d[ind] >= self.epsilon:
             ind = None
@@ -109,7 +112,7 @@ class App:
         self.finalpoints.append(tuple(self.ctrlPoints))
         self.ctrlPoints.clear()
 
-    def line_control(self,k):
+    def line_control(self, k):
         alpha = 0.4
         self.roi = np.array(self.ctrlPoints)
         cv2.fillPoly(self.img2, [self.roi], (255, 0, 0))
@@ -124,17 +127,21 @@ class App:
 
         if len(ctrl) > 1:
             for n in range(len(ctrl) - 1):
-                cv2.line(self.img2, (ctrl[n][0], ctrl[n][1]), (ctrl[n + 1][0], ctrl[n + 1][1]), self.ORANGE, 1)
-    
+                cv2.line(
+                    self.img2,
+                    (ctrl[n][0], ctrl[n][1]),
+                    (ctrl[n + 1][0], ctrl[n + 1][1]),
+                    self.ORANGE,
+                    1,
+                )
 
-    
     def return_worker(self):
 
         result = np.asarray(self.finalpoints)
         return result
 
-    def run(self, windows_title = None):
-        
+    def run(self, windows_title=None):
+
         if self.filename:
             self.img2 = self.img.copy()
             try:
@@ -148,19 +155,20 @@ class App:
                 cv2.imshow(windows_title, self.img2)
                 k = cv2.waitKey(1)
 
-                if k == ord('i'):
+                if k == ord("i"):
 
                     self.mouse_flags(False, True, False)
 
-                elif k == ord('m'):
+                elif k == ord("m"):
 
                     self.mouse_flags(True, False, False)
 
-                elif k == ord('d'):
+                elif k == ord("d"):
 
-                    self.ctrlPoints.pop()
+                    if self.ctrlPoints:
+                        self.ctrlPoints.pop()
 
-                elif k == ord('n'):
+                elif k == ord("n"):
 
                     self.save_points()
 
@@ -169,9 +177,9 @@ class App:
 
                 ctrl = self.ctrlPoints
                 self.circle_worker(ctrl, k)
-                
+
                 if k == 27:
-                    
+
                     cv2.destroyAllWindows()
                     return self.return_worker()
         else:

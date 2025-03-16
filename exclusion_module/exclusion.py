@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 import generals.windows_App as windows_App
 
+
 class Exclusion(windows_App.App):
 
     def __init__(self, filename=None):

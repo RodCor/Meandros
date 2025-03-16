@@ -2,3 +2,9 @@
 /jpeg_images
 *.pyc
 __pycache__
+.vscode
+*.csv
+*.json
+*.jsonl
+*.jsonl.gz
+*.jsonl.gz.part
