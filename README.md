@@ -109,7 +109,11 @@ If you encounter any issues during installation:
    rm -rf .venv
    bash install_meandros.sh
    ```
-
+## Citation
+If you use Meandros in your research, please cite:
+```
+Córdoba, R., Arce, H., & Chara, O. (2025). Meandros (1.0.0). Zenodo. https://doi.org/10.5281/zenodo.15036318
+```
 
 ## License
 

@@ -13,6 +13,12 @@ print_message() {
     echo -e "${color}${message}${NC}"
 }
 
+# Clean up __pycache__ directories
+print_message "$YELLOW" "Cleaning up Python cache files..."
+find . -type d -name "__pycache__" -exec rm -r {} +
+find . -type f -name "*.pyc" -delete
+find . -type f -name "*.pyo" -delete
+
 # Check for Python installation
 print_message "$YELLOW" "Checking Python installation..."
 if ! command -v python3 >/dev/null 2>&1; then
