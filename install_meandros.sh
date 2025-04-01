@@ -19,6 +19,23 @@ find . -type d -name "__pycache__" -exec rm -r {} +
 find . -type f -name "*.pyc" -delete
 find . -type f -name "*.pyo" -delete
 
+# Create roi_detection_model directory if it doesn't exist
+print_message "$YELLOW" "Setting up model directory..."
+
+# Download model file if it doesn't exist
+MODEL_FILE="roi_detection_module/mask_rcnn_axol_hand_ax.h5"
+if [ ! -f "$MODEL_FILE" ]; then
+    print_message "$YELLOW" "Downloading model file from Zenodo..."
+    curl -L "https://zenodo.org/records/15036318/files/mask_rcnn_axol_hand_ax.h5?download=1" -o "$MODEL_FILE"
+    if [ $? -ne 0 ]; then
+        print_message "$RED" "Failed to download model file."
+        exit 1
+    fi
+    print_message "$GREEN" "Model file downloaded successfully."
+else
+    print_message "$GREEN" "Model file already exists."
+fi
+
 # Check for Python installation
 print_message "$YELLOW" "Checking Python installation..."
 if ! command -v python3 >/dev/null 2>&1; then
