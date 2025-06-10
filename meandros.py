@@ -82,12 +82,7 @@ def weight_loader(model_type):
         "Axolotl Model": ["late_limb", "early_limb"],
         "Gastruloids Model": ["gastruloid_roi"],
     }
-    # Checks if the model is the gastruloids, if it is then it will pop up a popup window alert
-    if model_type == "Gastruloids Model":
-        messagebox.showinfo(
-            title="Alert!", message=f"Gastruloids model is not available yet"
-        )
-        return
+    
     # Creates the inference configuration
     inference_config = AxoHandConfig(num_classes=1 + len(CLASSES_DICT.get(model_type)))
     ROOT_DIR = os.getcwd()

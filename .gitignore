@@ -25,8 +25,8 @@ build/
 # Environment variables
 .env
 
-# Model files (if hosted externally)
-roi_detection_module/*.h5
+# Model files (specific exclusions - others will be tracked with Git LFS)
+roi_detection_module/mask_rcnn_axol_hand_ax.h5
 
 # Logs and databases
 *.log

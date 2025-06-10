@@ -1,1 +1,3 @@
 roi_detection_module/mask_rcnn_axol_hand.h5 filter=lfs diff=lfs merge=lfs -text
+mask_rcnn_gastruloids_roi_0120.h5 filter=lfs diff=lfs merge=lfs -text
+*.h5 filter=lfs diff=lfs merge=lfs -text
