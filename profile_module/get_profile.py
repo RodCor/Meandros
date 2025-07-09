@@ -98,7 +98,7 @@ def analysis(p_d, conj_mask, ap, image, channel, threshold, landmarks=None):
         for i in range(len(intersection_list)):
             img_r[intersection_list[i][1], intersection_list[i][0]] = [0, 255, 0]
             px = img[intersection_list[i][1], intersection_list[i][0]]
-            if px[channel] > threshold:  # THRESHOLD
+            if threshold is not None and px[channel] > threshold:  # THRESHOLD
                 suma += 1
                 img1[intersection_list[i][1], intersection_list[i][0]] = [0, 0, 255]
         rango += 1
@@ -159,4 +159,9 @@ def analysis(p_d, conj_mask, ap, image, channel, threshold, landmarks=None):
     plt.ion()
     plt.show()
     print(pd.DataFrame(data))
-    return pd.DataFrame(data), p_d[elbow[0]], p_d[wrist[0]]
+    
+    # Handle empty elbow and wrist lists
+    elbow_ratio = p_d[elbow[0]] if elbow else None
+    wrist_ratio = p_d[wrist[0]] if wrist else None
+    
+    return pd.DataFrame(data), elbow_ratio, wrist_ratio

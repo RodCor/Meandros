@@ -1,46 +1,23 @@
 #!/bin/bash
 
-# Function to check if a command exists
-command_exists() {
-    command -v "$1" >/dev/null 2>&1
-}
-
-# Check if UV is installed
-if ! command_exists uv; then
-    echo "UV is not installed. Please install it with: pip install uv"
+# Check if .venv exists
+if [ ! -d ".venv" ]; then
+    echo "Virtual environment (.venv) not found. Please run 'install_meandros.sh' first to set up the environment."
     exit 1
 fi
 
-# Check if .venv exists, if not create it
-if [ ! -d ".venv" ]; then
-    echo "Creating virtual environment..."
-    uv venv
-    if [ $? -ne 0 ]; then
-        echo "Failed to create virtual environment."
-        exit 1
-    fi
-    
-    echo "Installing dependencies..."
-    if [ -f ".venv/Scripts/python.exe" ]; then
-        # Windows path (Git Bash or WSL)
-        ./.venv/Scripts/python.exe -m uv pip install .
-    else
-        # Unix path
-        ./.venv/bin/python -m uv pip install .
-    fi
-    
-    if [ $? -ne 0 ]; then
-        echo "Failed to install dependencies."
-        exit 1
-    fi
-fi
-
-# Run meandros.py with the virtual environment's Python
+# Activate virtual environment and run meandros
 echo "Starting Meandros..."
-if [ -f ".venv/Scripts/python.exe" ]; then
+if [ -f ".venv/Scripts/activate" ]; then
     # Windows path (Git Bash or WSL)
-    ./.venv/Scripts/python.exe meandros.py
+    source .venv/Scripts/activate
 else
     # Unix path
-    ./.venv/bin/python meandros.py
-fi 
+    source .venv/bin/activate
+fi
+
+# Run meandros.py from within the activated environment
+python meandros.py
+
+# Deactivate virtual environment
+deactivate 

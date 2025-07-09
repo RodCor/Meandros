@@ -13,13 +13,11 @@ class Landmarks(bezierPD.BezierPD):
             filename: str, path to the image file
             ctrl_points: list, list of control points
         """
+        # Initialize the parent class first
+        super().__init__(filename=filename, roi=None, ctrlPoints=ctrl_points)
+        
+        # Override with specific values for Landmarks
         self.img = cv2.imread(filename)
-        self.filename = filename
-        self.ctrlPoints = ctrl_points
-        self.INSERT_FLAG = False  # key: 'i'
-        self.MOVE_FLAG = False  # key: 'm'
-        self.ACTIVE_MOV_FLAG = False
-        self.ind = None
         self.SHOW_LINES = False
 
     def circle_worker(self, ctrl, k):

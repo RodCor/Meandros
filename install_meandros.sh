@@ -40,7 +40,7 @@ fi
 print_message "$YELLOW" "Checking Python installation..."
 if ! command -v python3 >/dev/null 2>&1; then
     if ! command -v python >/dev/null 2>&1; then
-        print_message "$RED" "Python is not installed. Please install Python 3.8 or higher."
+        print_message "$RED" "Python is not installed. Please install Python 3.8 to 3.11."
         exit 1
     fi
     PYTHON_CMD="python"
@@ -53,8 +53,16 @@ python_version=$($PYTHON_CMD -c 'import sys; v=sys.version_info; print(f"{v.majo
 python_major=$(echo $python_version | cut -d. -f1)
 python_minor=$(echo $python_version | cut -d. -f2)
 
+# Check if Python version is too low
 if [ "$python_major" -lt 3 ] || ([ "$python_major" -eq 3 ] && [ "$python_minor" -lt 8 ]); then
     print_message "$RED" "Python version must be 3.8 or higher. Current version: $python_version"
+    exit 1
+fi
+
+# Check if Python version is too high
+if [ "$python_major" -gt 3 ] || ([ "$python_major" -eq 3 ] && [ "$python_minor" -gt 11 ]); then
+    print_message "$RED" "Python version must be 3.11 or lower. Current version: $python_version"
+    print_message "$RED" "Meandros requires Python 3.8 to 3.11."
     exit 1
 fi
 
@@ -71,14 +79,18 @@ else
     VENV_PIP=".venv/bin/pip"
 fi
 
+# Remove existing virtual environment if it exists
+if [ -d ".venv" ]; then
+    print_message "$YELLOW" "Removing existing virtual environment..."
+    rm -rf .venv
+fi
+
 # Create and set up virtual environment
-if [ ! -d ".venv" ]; then
-    print_message "$YELLOW" "Creating virtual environment..."
-    $PYTHON_CMD -m venv .venv --upgrade-deps
-    if [ $? -ne 0 ]; then
-        print_message "$RED" "Failed to create virtual environment."
-        exit 1
-    fi
+print_message "$YELLOW" "Creating virtual environment..."
+$PYTHON_CMD -m venv .venv --upgrade-deps
+if [ $? -ne 0 ]; then
+    print_message "$RED" "Failed to create virtual environment."
+    exit 1
 fi
 
 # Ensure pip is installed in virtual environment
@@ -100,12 +112,19 @@ $VENV_PYTHON -m pip install --upgrade uv
 
 # Install dependencies using UV from virtual environment
 print_message "$YELLOW" "Installing Meandros dependencies..."
+
+# Debug: Show which Python UV is detecting
+print_message "$YELLOW" "Checking Python version UV will use..."
+$VENV_PYTHON -c "import sys; print(f'Virtual environment Python: {sys.version}')"
+
 if [ -f "requirements.lock" ]; then
     print_message "$YELLOW" "Using requirements.lock for exact versions..."
-    $VENV_PYTHON -m uv pip sync requirements.lock
+    # Use --python flag to explicitly specify the Python interpreter
+    $VENV_PYTHON -m uv pip sync requirements.lock --python "$VENV_PYTHON"
 else
     print_message "$YELLOW" "Installing from pyproject.toml..."
-    $VENV_PYTHON -m uv pip install .
+    # Use --python flag to explicitly specify the Python interpreter
+    $VENV_PYTHON -m uv pip install . --python "$VENV_PYTHON"
 fi
 
 if [ $? -eq 0 ]; then
