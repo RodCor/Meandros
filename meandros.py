@@ -409,7 +409,6 @@ class Root(Tk):
             except AttributeError:
                 pass
             del self.object_list[elem]
-
     def export_axis(self) -> None:
         if self.get_index():
             index = self.get_index()[0]
@@ -418,6 +417,10 @@ class Root(Tk):
             return
         f = open("Axis_Extractor.csv", "a+")
         writer = csv.writer(f)
+        # Write headers if file is empty
+        f.seek(0)
+        if not f.read():
+            writer.writerow(["X", "Y", "Filename"])
         name = self.object_list[index].name
         for x in self.object_list[index].ctrlPoints:
             r = [x[0], x[1], name]
