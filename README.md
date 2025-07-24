@@ -110,6 +110,13 @@ If you encounter any issues during installation:
    bash install_meandros.sh
    ```
 ## Citation
+
+Publication
+
+```
+Arce, H., Ceccarelli, A.S., Córdoba, R.C. et al. Modeling proximalisation in axolotl limb regeneration. Sci Rep 15, 26839 (2025). https://doi.org/10.1038/s41598-025-10527-8
+```
+
 If you use Meandros in your research, please cite:
 ```
 Córdoba, R., Arce, H., & Chara, O. (2025). Meandros (1.0.0). Zenodo. https://doi.org/10.5281/zenodo.15036318
